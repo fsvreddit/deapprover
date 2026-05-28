@@ -27,6 +27,11 @@ export async function bulkAddUsersToCleanup (usernames: string[], context: Trigg
     console.log(`Added ${usernames.length} users to cleanup queue for subreddit ${context.subredditName}`);
 }
 
+export async function removeUserFromCleanup (username: string, context: TriggerContext | JobContext) {
+    await context.redis.zRem(CLEANUP_QUEUE, [username]);
+    console.log(`Removed user ${username} from cleanup queue for subreddit ${context.subredditName}`);
+}
+
 export async function processCleanupJob (event: ScheduledJobEvent<CleanupJobData>, context: JobContext) {
     const runRecentlyKey = `cleanupJob:runRecently`;
     if (event.data.fromCron && await context.redis.exists(runRecentlyKey)) {

@@ -3,14 +3,38 @@ import { CommentSubmit, ModAction, PostSubmit } from "@devvit/protos";
 import { getTrueUsername } from "@fsvreddit/fsv-devvit-helpers";
 import { DeapproveInactiveUsersJobData } from "./types.js";
 import { AppSetting, AppSettings, getAppSettings } from "./settings.js";
-import { addMinutes, addSeconds, subMonths } from "date-fns";
+import { addHours, addMinutes, addSeconds, subMonths } from "date-fns";
 import { SchedulerJob } from "./constants.js";
 import { getExtendedDevvit } from "./extendedDevvit.js";
-import { bulkAddUsersToCleanup, setCleanupForUser } from "./cleanup.js";
+import { bulkAddUsersToCleanup, removeUserFromCleanup, setCleanupForUser } from "./cleanup.js";
 
 const LAST_USER_ACTION_DATE = "lastUserActionDate";
 
+function getApprovedUserCacheKey (username: string) {
+    return `approvedUser:${username}`;
+}
+
+async function isUserApproved (username: string, context: TriggerContext | JobContext): Promise<boolean> {
+    const approvedUserCacheKey = getApprovedUserCacheKey(username);
+    const approvedUserCacheValue = await context.redis.get(approvedUserCacheKey);
+    if (approvedUserCacheValue !== undefined) {
+        return JSON.parse(approvedUserCacheValue) as boolean;
+    }
+
+    const isApprovedUser = await context.reddit.getApprovedUsers({
+        subredditName: context.subredditName ?? await context.reddit.getCurrentSubredditName(),
+        username,
+    }).all().then(users => users.length > 0);
+
+    await context.redis.set(approvedUserCacheKey, JSON.stringify(isApprovedUser), { expiration: addHours(new Date(), 1) });
+    return isApprovedUser;
+}
+
 async function recordUserActivity (username: string, context: TriggerContext | JobContext) {
+    if (!await isUserApproved(username, context)) {
+        return;
+    }
+
     await context.redis.zAdd(LAST_USER_ACTION_DATE, { member: username, score: Date.now() });
     await setCleanupForUser(username, context);
     console.log(`Recorded activity for user ${username} in subreddit ${context.subredditName}`);
@@ -164,6 +188,8 @@ export async function handleModAction (event: ModAction, context: TriggerContext
 
     if (event.action === "removecontributor") {
         await context.redis.zRem(LAST_USER_ACTION_DATE, [event.targetUser.name]);
+        await context.redis.del(getApprovedUserCacheKey(event.targetUser.name));
+        await removeUserFromCleanup(event.targetUser.name, context);
         console.log(`Removed user ${event.targetUser.name} from activity tracking due to removal from approved users in subreddit ${context.subredditName}`);
     }
 }

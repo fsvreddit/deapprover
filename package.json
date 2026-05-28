@@ -5,8 +5,8 @@
   "license": "BSD-3-Clause",
   "type": "module",
   "scripts": {
-    "deploy": "devvit publish && devvit install Rateme",
-    "logs": "devvit logs Rateme --verbose --since 5m",
+    "deploy": "devvit publish && devvit install RMCAlumni",
+    "logs": "devvit logs RMCAlumni --verbose --since 5m",
     "test": "npm run test:unit",
     "test:unit": "vitest --run"
   },
