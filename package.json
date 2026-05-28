@@ -1,0 +1,25 @@
+{
+  "private": true,
+  "name": "rateme-bot",
+  "version": "0.0.0",
+  "license": "BSD-3-Clause",
+  "type": "module",
+  "scripts": {
+    "deploy": "devvit publish && devvit install Rateme",
+    "logs": "devvit logs Rateme --verbose --since 5m",
+    "test": "npm run test:unit",
+    "test:unit": "vitest --run"
+  },
+  "dependencies": {
+    "@devvit/protos": "0.13.0",
+    "@devvit/public-api": "0.13.0",
+    "@fsvreddit/fsv-devvit-helpers": "github:fsvreddit/fsv-devvit-helpers",
+    "date-fns": "^4.3.0"
+  },
+  "devDependencies": {
+    "@fsvreddit/eslint-config": "github:fsvreddit/eslint-config",
+    "eslint": "^10.0.0",
+    "typescript": "5.8.3",
+    "vitest": "^4.0.10"
+  }
+}
