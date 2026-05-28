@@ -16,7 +16,7 @@ export const appSettings: SettingsFormField[] = [
     {
         type: "number",
         name: AppSetting.DeapproveAfterMonths,
-        label: "Deapprove posts after this many months",
+        label: "Deapprove users after this many months",
         helpText: "Automatically deapprove users after they have been inactive for this many months. Set to zero to disable checks",
         defaultValue: 6,
     },
