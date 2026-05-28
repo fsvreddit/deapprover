@@ -1,14 +1,17 @@
 {
-    "$schema": "https://developers.reddit.com/schema/config-file.v1.json",
-    "name": "deapprover",
-    "blocks": {
-        "entry": "src/main.ts",
-        "triggers": [
-            "onAppInstall",
-            "onAppUpgrade",
-            "onPostSubmit",
-            "onCommentSubmit",
-            "onModAction"
-        ]
-    }
+  "$schema": "https://developers.reddit.com/schema/config-file.v1.json",
+  "name": "deapprover",
+  "blocks": {
+    "entry": "src/main.ts",
+    "triggers": [
+      "onAppInstall",
+      "onAppUpgrade",
+      "onPostSubmit",
+      "onCommentSubmit",
+      "onModAction"
+    ]
+  },
+  "dev": {
+    "subreddit": "deapprover_dev"
+  }
 }
