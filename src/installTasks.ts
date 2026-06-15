@@ -2,27 +2,23 @@ import { TriggerContext } from "@devvit/public-api";
 import { AppInstall, AppUpgrade } from "@devvit/protos";
 import { SchedulerJob } from "./constants.js";
 import { addSeconds } from "date-fns";
-import { DeapproveInactiveUsersJobData } from "./types.js";
+import { CleanupJobData, DeapproveInactiveUsersJobData } from "./types.js";
 
 async function addCronJobs (context: TriggerContext) {
     const currentJobs = await context.scheduler.listJobs().then(jobs => jobs.filter(job => "cron" in job).map(job => job.id));
 
     await Promise.all(currentJobs.map(async jobId => context.scheduler.cancelJob(jobId)));
 
-    const jobData: DeapproveInactiveUsersJobData = {
-        fromCron: true,
-    };
-
     await context.scheduler.runJob({
         name: SchedulerJob.DeapproveInactiveUsers,
         cron: "5 * * * *", // every hour
-        data: jobData,
+        data: { fromCron: true } satisfies DeapproveInactiveUsersJobData,
     });
 
     await context.scheduler.runJob({
         name: SchedulerJob.Cleanup,
         cron: "10/30 * * * *", // every 30 minutes
-        data: jobData,
+        data: { fromCron: true } satisfies CleanupJobData,
     });
 }
 

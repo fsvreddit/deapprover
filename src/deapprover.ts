@@ -5,7 +5,7 @@ import { DeapproveInactiveUsersJobData } from "./types.js";
 import { AppSetting, AppSettings, getAppSettings } from "./settings.js";
 import { addHours, addMinutes, addSeconds, subMonths } from "date-fns";
 import { SchedulerJob } from "./constants.js";
-import { getExtendedDevvit } from "./extendedDevvit.js";
+import { getExtendedDevvit } from "devvit-helpers";
 import { bulkAddUsersToCleanup, removeUserFromCleanup, setCleanupForUser } from "./cleanup.js";
 
 const LAST_USER_ACTION_DATE = "lastUserActionDate";
@@ -106,14 +106,10 @@ export async function deapproveInactiveUsers (event: ScheduledJobEvent<Deapprove
     if (usersToDeapprove.length > 0) {
         console.log(`Deapprove Job: Still ${usersToDeapprove.length} users to deapprove after processing ${username}, will continue in next run`);
 
-        const jobData: DeapproveInactiveUsersJobData = {
-            fromCron: false,
-        };
-
         await context.scheduler.runJob({
             name: SchedulerJob.DeapproveInactiveUsers,
             runAt: addSeconds(new Date(), 30),
-            data: jobData,
+            data: { fromCron: false } satisfies DeapproveInactiveUsersJobData,
         });
     }
 }

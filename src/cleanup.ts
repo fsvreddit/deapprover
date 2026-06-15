@@ -69,14 +69,10 @@ export async function processCleanupJob (event: ScheduledJobEvent<CleanupJobData
     if (usersToClean.length > 0) {
         console.log(`Cleanup Job: Still ${usersToClean.length} users to clean after processing, will continue in next run`);
 
-        const jobData: CleanupJobData = {
-            fromCron: false,
-        };
-
         await context.scheduler.runJob({
             name: SchedulerJob.Cleanup,
             runAt: addSeconds(new Date(), 30),
-            data: jobData,
+            data: { fromCron: false } satisfies CleanupJobData,
         });
     }
 }
