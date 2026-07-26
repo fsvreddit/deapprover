@@ -1,6 +1,6 @@
-import { JobContext, ScheduledJobEvent, TriggerContext } from "@devvit/public-api";
+import { JobContext, JSONObject, ScheduledJobEvent, TriggerContext } from "@devvit/public-api";
 import { CommentSubmit, ModAction, PostSubmit } from "@devvit/protos";
-import { getTrueUsername } from "@fsvreddit/fsv-devvit-helpers";
+import { getTrueUsername, hasTriggerBeenHandled } from "@fsvreddit/fsv-devvit-helpers";
 import { DeapproveInactiveUsersJobData } from "./types.js";
 import { AppSetting, AppSettings, getAppSettings } from "./settings.js";
 import { addHours, addMinutes, addSeconds, subMonths } from "date-fns";
@@ -65,7 +65,13 @@ export async function recordContentCreation (event: PostSubmit | CommentSubmit, 
     await recordUserActivity(username, context);
 }
 
-export async function recordInitialApprovedUsers (_: unknown, context: JobContext) {
+export async function recordInitialApprovedUsers (event: ScheduledJobEvent<JSONObject | undefined>, context: JobContext) {
+    const jobGuid = event.data?.jobGuid as string | undefined;
+    if (jobGuid && await hasTriggerBeenHandled(context.redis, `job:${jobGuid}`, { expiration: addMinutes(new Date(), 5) })) {
+        console.warn(`Record Initial Approved Users Job: Skipping duplicate run for jobGuid ${jobGuid}`);
+        return;
+    }
+
     const approvedUsers = await context.reddit.getApprovedUsers({
         subredditName: context.subredditName ?? await context.reddit.getCurrentSubredditName(),
         limit: 1000,
@@ -78,6 +84,11 @@ export async function recordInitialApprovedUsers (_: unknown, context: JobContex
 }
 
 export async function deapproveInactiveUsers (event: ScheduledJobEvent<DeapproveInactiveUsersJobData>, context: JobContext) {
+    if (event.data.jobGuid && await hasTriggerBeenHandled(context.redis, `job:${event.data.jobGuid}`, { expiration: addMinutes(new Date(), 5) })) {
+        console.warn(`Deapprove Job: Skipping duplicate run for jobGuid ${event.data.jobGuid}`);
+        return;
+    }
+
     const runRecentlyKey = `deapproveInactiveUsers:runRecently`;
     if (event.data.fromCron && await context.redis.exists(runRecentlyKey)) {
         console.log("Deapprove Job: Skipping cron instance due to recent ad-hoc run");
@@ -109,7 +120,7 @@ export async function deapproveInactiveUsers (event: ScheduledJobEvent<Deapprove
         await context.scheduler.runJob({
             name: SchedulerJob.DeapproveInactiveUsers,
             runAt: addSeconds(new Date(), 30),
-            data: { fromCron: false } satisfies DeapproveInactiveUsersJobData,
+            data: { fromCron: false, jobGuid: crypto.randomUUID() } satisfies DeapproveInactiveUsersJobData,
         });
     }
 }

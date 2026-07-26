@@ -19,3 +19,9 @@ Note: on app install, all known approved users are added with an assumed last ac
 ## Source Code
 
 This app is open source. [You can find the source code on GitHub](https://github.com/fsvreddit/deapprover)
+
+## Change History
+
+### v1.0.1
+
+* Mitigate against duplicate actions if Dev Platform is having issues

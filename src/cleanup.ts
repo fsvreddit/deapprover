@@ -1,9 +1,10 @@
 import { JobContext, ScheduledJobEvent, TriggerContext } from "@devvit/public-api";
-import { addDays, addSeconds } from "date-fns";
+import { addDays, addMinutes, addSeconds } from "date-fns";
 import { removeRecordOfUserActivity } from "./deapprover.js";
 import { CleanupJobData } from "./types.js";
 import { SchedulerJob } from "./constants.js";
 import { getUserActiveStatus, UserActiveStatus } from "./userStatus.js";
+import { hasTriggerBeenHandled } from "@fsvreddit/fsv-devvit-helpers";
 
 const CLEANUP_QUEUE = "cleanupQueue";
 const CLEANUP_INTERVAL_DAYS = 7;
@@ -33,6 +34,11 @@ export async function removeUserFromCleanup (username: string, context: TriggerC
 }
 
 export async function processCleanupJob (event: ScheduledJobEvent<CleanupJobData>, context: JobContext) {
+    if (event.data.jobGuid && await hasTriggerBeenHandled(context.redis, `job:${event.data.jobGuid}`, { expiration: addMinutes(new Date(), 5) })) {
+        console.warn(`Cleanup Job: Skipping duplicate run for jobGuid ${event.data.jobGuid}`);
+        return;
+    }
+
     const runRecentlyKey = `cleanupJob:runRecently`;
     if (event.data.fromCron && await context.redis.exists(runRecentlyKey)) {
         console.log("Cleanup Job: Skipping cron instance due to recent ad-hoc run");
@@ -72,7 +78,7 @@ export async function processCleanupJob (event: ScheduledJobEvent<CleanupJobData
         await context.scheduler.runJob({
             name: SchedulerJob.Cleanup,
             runAt: addSeconds(new Date(), 30),
-            data: { fromCron: false } satisfies CleanupJobData,
+            data: { fromCron: false, jobGuid: crypto.randomUUID() } satisfies CleanupJobData,
         });
     }
 }

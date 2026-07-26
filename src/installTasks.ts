@@ -26,6 +26,7 @@ export async function handleAppInstall (_: AppInstall, context: TriggerContext) 
     await context.scheduler.runJob({
         name: SchedulerJob.RecordInitialApprovedUsers,
         runAt: addSeconds(new Date(), 10),
+        data: { jobGuid: crypto.randomUUID() },
     });
 
     await addCronJobs(context);
