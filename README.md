@@ -22,6 +22,10 @@ This app is open source. [You can find the source code on GitHub](https://github
 
 ## Change History
 
+### v1.1.0
+
+* Migrate code to use Devvit Web architecture, no user facing changes
+
 ### v1.0.1
 
 * Mitigate against duplicate actions if Dev Platform is having issues

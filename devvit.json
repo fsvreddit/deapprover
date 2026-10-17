@@ -1,17 +1,92 @@
 {
-  "$schema": "https://developers.reddit.com/schema/config-file.v1.json",
-  "name": "deapprover",
-  "blocks": {
-    "entry": "src/main.ts",
-    "triggers": [
-      "onAppInstall",
-      "onAppUpgrade",
-      "onPostSubmit",
-      "onCommentSubmit",
-      "onModAction"
-    ]
-  },
-  "dev": {
-    "subreddit": "fsvsandbox"
-  }
+    "$schema": "https://developers.reddit.com/schema/config-file.v1.json",
+    "name": "deapprover",
+    "permissions": {
+        "reddit": true
+    },
+    "scripts": {
+        "build": "vite build",
+        "dev": "vite build --watch"
+    },
+    "server": {
+        "dir": "dist/server",
+        "entry": "index.cjs"
+    },
+    "settings": {
+        "subreddit": {
+            "deapproveAfterMonths": {
+                "type": "number",
+                "label": "Deapprove users after this many months",
+                "helpText": "Automatically deapprove users after they have been inactive for this many months. Set to zero to disable checks",
+                "defaultValue": 6
+            },
+            "group_FlairSettings": {
+                "type": "group",
+                "label": "Flair Settings",
+                "helpText": "Set up flair to be applied to users who have been deapproved.",
+                "fields": {
+                    "flairText": {
+                        "type": "string",
+                        "label": "Flair Text",
+                        "helpText": "The text to be applied to the user's flair."
+                    },
+                    "flairCSSClass": {
+                        "type": "string",
+                        "label": "Flair CSS Class",
+                        "helpText": "Set this flair CSS class on users who have been deapproved. Leave blank to skip."
+                    },
+                    "flairTemplateID": {
+                        "type": "string",
+                        "label": "Flair Template ID",
+                        "helpText": "Set this flair template ID on users who have been deapproved. Leave blank to skip.",
+                        "validationEndpoint": "/internal/validators/validate-flair-template-id"
+                    }
+                }
+            },
+            "group_ModmailSettings": {
+                "type": "group",
+                "label": "Modmail Settings",
+                "helpText": "Send modmail to users who have been deapproved.",
+                "fields": {
+                    "modmailSubject": {
+                        "type": "string",
+                        "label": "Modmail Subject",
+                        "helpText": "Subject of the modmail sent to users who have been deapproved. Leave blank for default subject. Supported placeholder: {{subreddit}}",
+                        "defaultValue": "You have been removed as an approved user in r/{{subreddit}}"
+                    },
+                    "modmailText": {
+                        "type": "paragraph",
+                        "label": "Modmail to send to users who have been deapproved",
+                        "helpText": "Leave blank to disable. Supported placeholders: {{username}}, {{subreddit}}, {{months}}"
+                    },
+                    "archiveModmailAfterSend": {
+                        "type": "boolean",
+                        "label": "Archive modmail after sending",
+                        "helpText": "If enabled, modmail sent to users who have been deapproved will be automatically archived.",
+                        "defaultValue": true
+                    }
+                }
+            }
+        }
+    },
+    "triggers": {
+        "onAppInstall": "/internal/triggers/app-install",
+        "onAppUpgrade": "/internal/triggers/app-upgrade",
+        "onCommentCreate": "/internal/triggers/comment-create",
+        "onModAction": "/internal/triggers/mod-action",
+        "onPostCreate": "/internal/triggers/post-create"
+    },
+    "scheduler": {
+        "tasks": {
+            "cleanup": {
+                "endpoint": "/internal/scheduler/cleanup"
+            },
+            "deapproveInactiveUsers": {
+                "endpoint": "/internal/scheduler/deapprove-inactive-users"
+            },
+            "recordInitialApprovedUsers": {
+                "endpoint": "/internal/scheduler/record-initial-approved-users"
+            }
+        }
+    }
 }
